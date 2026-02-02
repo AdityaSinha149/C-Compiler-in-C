@@ -1,0 +1,25 @@
+
+
+
+
+
+int ahbs;
+char func1(int ch, char* s){
+    int c = 0;
+    int x = 9;
+    return 4;
+}
+
+int main(){
+                     if(44e-5) printf("Nothing here\n");
+                     int a = 5;
+                     char b = 7;
+                     int v,k;
+
+                                     
+                               
+                              
+                                 
+    printf          ("Demo fi                 le\n");
+        return 0;
+}
