@@ -216,3 +216,12 @@ node* parseGlobalDeclRest() {
     advance();
     return globalDeclTail;
 }
+
+node* parseTypes() {
+    if (!isType(currToken.tokenType))
+        return newNode(ERROR_NODE, &currToken);
+        
+    node *type = newNode(TYPE_SPEC, &currToken);
+    advance();
+    return type;
+}
