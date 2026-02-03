@@ -11,34 +11,34 @@ typedef enum {
     PROGRAM,
 
     /* ===================== Declarations ===================== */
-    FUNCTION_DEF,        // function definition
-    FUNCTION_PROTO,      // function prototype
-    GLOBAL_DECL,         // global variable declaration
+    FUNCTION_DEF,
+    FUNCTION_PROTO,
+    GLOBAL_DECL,
 
     /* ===================== Types ===================== */
-    TYPE_SPEC,           // int / char / void
+    TYPE_SPEC,
 
     /* ===================== Statements ===================== */
-    COMPOUND_STMT,       // { ... }
-    IF_STMT,             // if / else
-    WHILE_STMT,          // while
-    RETURN_STMT,         // return
-    EXPR_STMT,           // expression ;
+    COMPOUND_STMT,
+    IF_STMT,
+    WHILE_STMT,
+    RETURN_STMT,
+    EXPR_STMT,
 
     /* ===================== Expressions ===================== */
-    ASSIGN_EXPR,         // a = b
-    BINARY_EXPR,         // + - * / % < > == && ||
-    UNARY_EXPR,          // -a, !a
-    CALL_EXPR,           // f(...)
+    ASSIGN_EXPR,
+    BINARY_EXPR,
+    UNARY_EXPR,
+    CALL_EXPR,
     
     /* ===================== Leaves ===================== */
-    IDENTIFIER_NODE,     // variable / function name
-    INT_LITERAL_NODE,    // integer constant
-    CHAR_LITERAL_NODE,   // character constant
+    IDENTIFIER_NODE,
+    INT_LITERAL_NODE,
+    CHAR_LITERAL_NODE,
 
     /* ===================== Utility ===================== */
-    EMPTY_NODE,          // ε (optional)
-    ERROR_NODE           // syntax error
+    EMPTY_NODE,
+    ERROR_NODE
 
 } nodeType;
 
@@ -62,6 +62,10 @@ node* newNode(nodeType type, token *t) {
     return n;
 }
 
+node* returnErrorNode(){
+    return newNode(ERROR_NODE, &currToken);
+}
+
 void addChild(node *parent, node *child) {
     if (!parent || !child) return;
     if (!parent->left) {
@@ -81,6 +85,16 @@ node* parseFunctionOrGlobal();
 node* parseFunctionOrGlobalRest(node* type, node* id);
 node* parseFunctionRest(node* type, node* id, node* params);
 node* parseGlobalDeclRest();
+node* parseTypes();
+node* parseParamList();
+node* parseParamListTail();
+node* parseParam();
+node* parseCompoundStmt();
+node* parseDeclarationList();
+node* parseDeclaration();
+node* parseInitDeclaratorList(node* type);
+node* parseInitDeclaratorListTail(node* type);
+node* parseInitDeclarator();
 
 FILE *src;
 int row = 1, col = 1;
@@ -92,10 +106,8 @@ static void advance() {
 
 int main() {
     src = fopen("file.c", "r");
-
     advance();
     parseProgram();
-
     fclose(src);
     return 0;
 }
@@ -103,17 +115,12 @@ int main() {
 //Program -> ExternalDeclList EOF
 node* parseProgram() {
     node* program = newNode(PROGRAM, NULL);
-
     program->left = parseExternalDeclList();
-
     if (currToken.tokenName[0] != '\0') {
-        return newNode(ERROR_NODE, &currToken);
+        return returnErrorNode();
     }
-
     return program;
 }
-
-
 
 //ExternalDeclList -> ExternalDecl ExternalDeclList | ε
 node* parseExternalDeclList() {
@@ -121,9 +128,10 @@ node* parseExternalDeclList() {
         return NULL;
 
     node* curr = parseExternalDecl();
-    node* next = parseExternalDeclList();
+    if (!curr || curr->type == ERROR_NODE)
+        return curr;
 
-    curr->next = next;
+    curr->next = parseExternalDeclList();
     return curr;
 }
 
@@ -134,14 +142,12 @@ node* parseExternalDecl() {
 
 //FunctionOrGlobal -> Type IDENTIFIER FunctionOrGlobalRest
 node* parseFunctionOrGlobal() {
-
     node* type = parseTypes();
     if (!type || type->type == ERROR_NODE)
         return type;
 
-
     if (strcmp(currToken.tokenName, "id") != 0)
-        return newNode(ERROR_NODE, &currToken);
+        return returnErrorNode();
 
     node* id = newNode(IDENTIFIER_NODE, &currToken);
     advance();
@@ -152,18 +158,19 @@ node* parseFunctionOrGlobal() {
 //FunctionOrGlobalRest -> '(' ParamList ')' FunctionRest | GlobalDeclRest
 node* parseFunctionOrGlobalRest(node* type, node* id) {
 
-    if (currToken.tokenName[0] == '(') {
+    if (currToken.tokenValue[0] == '(') {
 
-        advance(); // (
+        advance();
         node* params = parseParamList();
-        advance(); // )
 
+        if (currToken.tokenValue[0] != ')')
+            return returnErrorNode();
+
+        advance();
         return parseFunctionRest(type, id, params);
     }
 
-    /* global variable */
     node* init = parseGlobalDeclRest();
-
     node* var = newNode(GLOBAL_DECL, NULL);
     var->left = type;
     type->next = id;
@@ -174,25 +181,16 @@ node* parseFunctionOrGlobalRest(node* type, node* id) {
 //FunctionRest -> ';' | CompoundStmt
 node* parseFunctionRest(node* type, node* id, node* params) {
 
-    /* function prototype */
     if (currToken.tokenValue[0] == ';') {
         advance();
-
         node* fn = newNode(FUNCTION_PROTO, NULL);
         fn->left = type;
         type->next = id;
-
-        if (params)
-            id->next = params;
-        else
-            id->next = NULL;
-
+        id->next = params;
         return fn;
     }
 
-    /* function definition */
     node* body = parseCompoundStmt();
-
     node* fn = newNode(FUNCTION_DEF, NULL);
     fn->left = type;
     type->next = id;
@@ -209,19 +207,158 @@ node* parseFunctionRest(node* type, node* id, node* params) {
 
 //GlobalDeclRest -> InitDeclaratorListTail ';'
 node* parseGlobalDeclRest() {
-    node* globalDeclTail = parseInitDeclaratorListTail();
-    
+    node* globalDeclTail = parseInitDeclaratorListTail(NULL);
     if (currToken.tokenValue[0] != ';')
-        return newNode(ERROR_NODE, &currToken);
+        return returnErrorNode();
     advance();
     return globalDeclTail;
 }
 
+//Type → 'int' | 'char' | 'void'
 node* parseTypes() {
     if (!isType(currToken.tokenType))
-        return newNode(ERROR_NODE, &currToken);
-        
+        return NULL;
     node *type = newNode(TYPE_SPEC, &currToken);
     advance();
     return type;
+}
+
+//ParamList → Param ParamListTail | ε
+node* parseParamList() {
+    if (!isType(currToken.tokenType))
+        return NULL;
+
+    node* param = parseParam();
+    if (!param || param->type == ERROR_NODE)
+        return param;
+
+    param->next = parseParamListTail();
+    return param;
+}
+
+//ParamListTail → ',' Param ParamListTail | ε
+node* parseParamListTail() {
+    if (currToken.tokenValue[0] != ',')
+        return NULL;
+
+    advance();
+    node* param = parseParam();
+    if (!param || param->type == ERROR_NODE)
+        return param;
+
+    param->next = parseParamListTail();
+    return param;
+}
+
+//Param → Type IDENTIFIER
+node* parseParam() {
+    node* type = parseTypes();
+    if (!type)
+        return NULL;
+
+    if (strcmp(currToken.tokenName, "id") != 0)
+        return returnErrorNode();
+
+    node* id = newNode(IDENTIFIER_NODE, &currToken);
+    advance();
+
+    type->next = id;
+    return type;
+}
+
+//CompoundStmt → '{' DeclarationList StatementList '}'
+node* parseCompoundStmt() {
+    if (currToken.tokenValue[0] != '{')
+        return returnErrorNode();
+
+    advance();
+    node* compoundStmt = newNode(COMPOUND_STMT, NULL);
+    node* declarationList = parseDeclarationList();
+    node* statementList = parseStatementList();
+
+    if (currToken.tokenValue[0] != '}')
+        return returnErrorNode();
+
+    advance();
+
+    if (declarationList) addChild(compoundStmt, declarationList);
+    if (statementList) addChild(compoundStmt, statementList);
+
+    return compoundStmt;
+}
+
+//DeclarationList -> Declaration DeclarationList | ε
+node* parseDeclarationList() {
+    if (!isType(currToken.tokenType))
+        return NULL;
+
+    node* declaration = parseDeclaration();
+    if (!declaration || declaration->type == ERROR_NODE)
+        return declaration;
+
+    node* rest = parseDeclarationList();
+    node* tail = declaration;
+    while (tail->next) tail = tail->next;
+    tail->next = rest;
+    return declaration;
+}
+
+//Declaration -> Type InitDeclaratorList ';'
+node* parseDeclaration() {
+    node* type = parseTypes();
+    if (!type)
+        return NULL;
+
+    node* declList = parseInitDeclaratorList(type);
+    if (!declList || declList->type == ERROR_NODE)
+        return returnErrorNode();
+
+    if (currToken.tokenValue[0] != ';')
+        return returnErrorNode();
+
+    advance();
+    return declList;
+}
+
+//InitDeclaratorList → InitDeclarator InitDeclaratorListTail
+node* parseInitDeclaratorList(node* type) {
+    node* first = parseInitDeclarator(type);
+    if (!first || first->type == ERROR_NODE)
+        return first;
+
+    node* tail = parseInitDeclaratorListTail(type);
+    first->next = tail;
+    return first;
+}
+
+//InitDeclaratorListTail → ',' InitDeclarator InitDeclaratorListTail | ε
+node* parseInitDeclaratorListTail(node* type) {
+    if (currToken.tokenValue[0] != ',')
+        return NULL;
+
+    advance();
+    node* decl = parseInitDeclarator(type);
+    if (!decl || decl->type == ERROR_NODE)
+        return decl;
+
+    decl->next = parseInitDeclaratorListTail(type);
+    return decl;
+}
+
+//InitDeclarator → IDENTIFIER | IDENTIFIER '=' Expression
+node* parseInitDeclarator(node* type) {
+    if (strcmp(currToken.tokenName, "id") != 0)
+        return returnErrorNode();
+
+    node* id = newNode(IDENTIFIER_NODE, &currToken);
+    advance();
+
+    if (currToken.tokenValue[0] == '=') {
+        advance();
+        id->left = parseExpression();
+        if (!id->left || id->left->type == ERROR_NODE)
+            return returnErrorNode();
+    }
+
+    return id;
 }
