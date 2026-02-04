@@ -13,9 +13,6 @@ char func1(int ch, char* s){
 int main(){
                      if(44e-5) printf("Nothing here\n");
                      int a = 5;
-                     char b = 7;
-                     int v,k;
-
                                      
                                
                               

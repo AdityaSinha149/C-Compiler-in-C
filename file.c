@@ -13,9 +13,7 @@ char func1(int ch, char* s){
 int main(){
                      if(PI) printf("Nothing here\n");
                      int a = 5;
-                     char b = 7;
-                     int v,k;
-
+                     
                      //bcsjhkdvbdsjkh
                      /*vhjskdvk
                      bdsfhgbdf

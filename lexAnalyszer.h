@@ -68,6 +68,17 @@ static token getNextToken(FILE *src, int *row, int *col){
 
     while (ch != EOF) {
 
+        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
+            if (ch == '\n') {
+                (*row)++;
+                *col = 1;
+            } else {
+                (*col)++;
+            }
+            ch = fgetc(src);
+            continue;
+        }
+
         if (isalpha(ch)) {
             curr = isKeyword(ch, src, row, col);
             if (curr.tokenName[0]) return curr;
@@ -87,7 +98,7 @@ static token getNextToken(FILE *src, int *row, int *col){
             return curr;
         }
 
-        else if (strchr("+-&|*/%<>!^?", ch)) {
+        else if (strchr("+-&|*/%<>!^?=", ch)) {
             curr = isOperator(ch, src, row, col);
             return curr;
         }
@@ -179,6 +190,8 @@ static token isIdentifier(int ch, FILE *src, int *row, int *col) {
             }
             else {
                 strcpy ( curr.tokenType, type );
+                if (ch != EOF)
+                    fseek(src, -1, SEEK_CUR);
             }
             curr.size = findSizeOf( type );
 
@@ -228,11 +241,16 @@ static token isRelationalOperator(int ch, FILE *src, int *row, int *col) {
 
     if (ch == '='){
         strcpy(curr.tokenName, "relOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = '=';
+        curr.tokenValue[2] = '\0';
         (*col) += 2;
         return curr;
     }
     else if (prev == '<' || prev == '>'){
         strcpy(curr.tokenName, "relOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = '\0';
         (*col)++;
         return curr;
     }
@@ -255,11 +273,16 @@ static token isArithmeticOperator(int ch, FILE *src, int *row, int *col) {
     if ((prev == '+' && ch == '+') || 
         (prev == '-' && ch == '-')){
         strcpy(curr.tokenName, "ariOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = (char)ch;
+        curr.tokenValue[2] = '\0';
         (*col) += 2;
         return curr;
     }
     else{
         strcpy(curr.tokenName, "ariOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = '\0';
         (*col)++;
         fseek(src, -1, SEEK_CUR);
     }
@@ -279,11 +302,16 @@ static token isLogicalOperator(int ch, FILE *src, int *row, int *col) {
 
     if (prev != '!' && ch == prev){
         strcpy(curr.tokenName, "logOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = (char)ch;
+        curr.tokenValue[2] = '\0';
         (*col) += 2;
         return curr;
     }
     else if (ch == '!') {
         strcpy(curr.tokenName, "logOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = '\0';
         (*col)++;
 
         fseek(src, -1, SEEK_CUR);
@@ -308,16 +336,23 @@ static token isBitwiseOperator(int ch, FILE *src, int *row, int *col) {
 
     if (prev == '^' || prev == '~') {
         strcpy(curr.tokenName, "bitOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = '\0';
         (*col)++;
         return curr;
     }
     else if ((ch == '<' || ch == '>') && prev == ch){
         strcpy(curr.tokenName, "bitOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = (char)ch;
+        curr.tokenValue[2] = '\0';
         (*col) += 2;
         return curr;
     }
     if ((prev == '&' || prev == '|') && prev != ch) {
         strcpy(curr.tokenName, "bitOp");
+        curr.tokenValue[0] = (char)prev;
+        curr.tokenValue[1] = '\0';
         (*col)++;
 
         fseek(src, -1, SEEK_CUR);
@@ -335,6 +370,8 @@ static token isConditionalOperator(int ch, int *row, int *col) {
 
     if (ch == '?' || ch == ':') {
         strcpy(curr.tokenName, "condOp");
+        curr.tokenValue[0] = (char)ch;
+        curr.tokenValue[1] = '\0';
         curr.row = *row;
         curr.col = *col;
         (*col)++;
@@ -359,6 +396,8 @@ static token isAssignmentOperator(int ch, FILE *src, int *row, int *col) {
 
     if (ch == '=' && next != '=') {
         strcpy(curr.tokenName, "assignOp");
+        curr.tokenValue[0] = (char)ch;
+        curr.tokenValue[1] = '\0';
         (*col)++;
 
         if (next != EOF)
@@ -369,6 +408,9 @@ static token isAssignmentOperator(int ch, FILE *src, int *row, int *col) {
 
     if (next == '=') {
         strcpy(curr.tokenName, "assignOp");
+        curr.tokenValue[0] = (char)ch;
+        curr.tokenValue[1] = '=';
+        curr.tokenValue[2] = '\0';
         (*col) += 2;
         return curr;
     }
@@ -378,6 +420,10 @@ static token isAssignmentOperator(int ch, FILE *src, int *row, int *col) {
 
         if (next2 == '=') {
             strcpy(curr.tokenName, "assignOp");
+            curr.tokenValue[0] = (char)ch;
+            curr.tokenValue[1] = (char)next;
+            curr.tokenValue[2] = '=';
+            curr.tokenValue[3] = '\0';
             (*col) += 3;
             return curr;
         }
@@ -394,6 +440,7 @@ static token isAssignmentOperator(int ch, FILE *src, int *row, int *col) {
 
 static token isStringLiteral(int ch, FILE *src, int *row, int *col) {
     token curr;
+    memset(&curr, 0, sizeof(curr));
     curr.col = *col;
     curr.row = *row;
     strcpy(curr.tokenName, "stringLit");

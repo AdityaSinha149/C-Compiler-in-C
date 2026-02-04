@@ -24,6 +24,10 @@ int isSame(symbolTableEntry a, symbolTableEntry b);
 int hash(symbolTableEntry*entry);
 void printLocalSymbolTable(symbolTable*st, FILE *dst);
 void printGlobalSymbolTable(symbolTable *st, FILE *dst);
+static int parseArrayLengthAfterLBracket(FILE *src, int *row, int *col, int *hasExplicitSize);
+static int countInitializerElementsAfterLBrace(FILE *src, int *row, int *col, const char *baseType);
+static int countStringLiteralLengthAfterQuote(FILE *src, int *row, int *col);
+static void skipCharLiteralAfterQuote(FILE *src, int *row, int *col);
 
 int main() {
     char file[100];
@@ -70,14 +74,73 @@ int main() {
                     if (isEmptyStack(&scopeStack))
                         currLocalTable = &globalTable;
                 }
+                else if (currToken.tokenValue[0] == '\'') {
+                    skipCharLiteralAfterQuote(tmp, &row, &col);
+                }
                 continue;
             }
             if (strcmp(currToken.tokenName, "id") == 0) {
                 long pos = ftell(tmp);
-                token nextToken = getNextToken(tmp, &row, &col);
+                int lookRow = row;
+                int lookCol = col;
+                token nextToken = getNextToken(tmp, &lookRow, &lookCol);
                 if (nextToken.tokenValue[0] == '(' && strcmp(prevToken.tokenName, "keyword") == 0){
+                    row = lookRow;
+                    col = lookCol;
                     strcpy(currToken.tokenName, "Func");
                     currLocalTable = AddFunctionEntryInGlobalTableAndMakeItsLocalTable (currToken, &scopeStack);
+                }
+                else if (strcmp(nextToken.tokenName, "symbol") == 0 && nextToken.tokenValue[0] == '[') {
+                    int hasExplicitSize = 0;
+                    int elementCount = parseArrayLengthAfterLBracket(tmp, &lookRow, &lookCol, &hasExplicitSize);
+
+                    if (!hasExplicitSize) {
+                        long posAfterBracket = ftell(tmp);
+                        int initRow = lookRow;
+                        int initCol = lookCol;
+                        int ch = fgetc(tmp);
+
+                        while (ch != EOF && isspace(ch)) {
+                            if (ch == '\n') {
+                                initRow++;
+                                initCol = 1;
+                            } else {
+                                initCol++;
+                            }
+                            ch = fgetc(tmp);
+                        }
+
+                        if (ch == '=') {
+                            initCol++;
+                            ch = fgetc(tmp);
+
+                            while (ch != EOF && isspace(ch)) {
+                                if (ch == '\n') {
+                                    initRow++;
+                                    initCol = 1;
+                                } else {
+                                    initCol++;
+                                }
+                                ch = fgetc(tmp);
+                            }
+
+                            if (ch == '{') {
+                                initCol++;
+                                elementCount = countInitializerElementsAfterLBrace(tmp, &initRow, &initCol, currToken.tokenType);
+                            } else if (ch == '"' && strcmp(currToken.tokenType, "char") == 0) {
+                                initCol++;
+                                elementCount = countStringLiteralLengthAfterQuote(tmp, &initRow, &initCol);
+                            }
+                        }
+
+                        fseek(tmp, posAfterBracket, SEEK_SET);
+                    }
+
+                    if (elementCount > 0 && currToken.size > 0)
+                        currToken.size = elementCount * currToken.size;
+
+                    fseek(tmp, pos, SEEK_SET);
+                    MakeTableEntryAndAddInTable(currToken, currLocalTable);
                 }
                 else {
                     fseek(tmp, pos, SEEK_SET);
@@ -251,4 +314,163 @@ void printLocalSymbolTable(symbolTable*st, FILE *dst) {
         }
     }
 
+}
+
+static int parseArrayLengthAfterLBracket(FILE *src, int *row, int *col, int *hasExplicitSize) {
+    int ch;
+    int value = 0;
+    int sawDigit = 0;
+
+    *hasExplicitSize = 0;
+
+    while ((ch = fgetc(src)) != EOF) {
+        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
+            if (ch == '\n') {
+                (*row)++;
+                *col = 1;
+            } else {
+                (*col)++;
+            }
+            continue;
+        }
+
+        if (isdigit(ch)) {
+            sawDigit = 1;
+            value = value * 10 + (ch - '0');
+            (*col)++;
+            continue;
+        }
+
+        if (ch == ']') {
+            (*col)++;
+            break;
+        }
+
+        (*col)++;
+    }
+
+    if (sawDigit) *hasExplicitSize = 1;
+    return value;
+}
+
+static int countInitializerElementsAfterLBrace(FILE *src, int *row, int *col, const char *baseType) {
+    (void)baseType;
+    int ch;
+    int depth = 1;
+    int count = 0;
+    int inElement = 0;
+
+    while ((ch = fgetc(src)) != EOF) {
+        if (ch == '\n') {
+            (*row)++;
+            *col = 1;
+        } else {
+            (*col)++;
+        }
+
+        if (ch == '"') {
+            inElement = 1;
+            int prev = 0;
+            while ((ch = fgetc(src)) != EOF) {
+                if (ch == '\n') {
+                    (*row)++;
+                    *col = 1;
+                } else {
+                    (*col)++;
+                }
+                if (ch == '"' && prev != '\\') break;
+                prev = ch;
+            }
+            continue;
+        }
+
+        if (ch == '{') {
+            depth++;
+            inElement = 1;
+            continue;
+        }
+
+        if (ch == '}') {
+            if (depth == 1) {
+                if (inElement) count++;
+                break;
+            }
+            depth--;
+            inElement = 1;
+            continue;
+        }
+
+        if (ch == ',' && depth == 1) {
+            if (inElement) {
+                count++;
+                inElement = 0;
+            }
+            continue;
+        }
+
+        if (!isspace(ch)) inElement = 1;
+    }
+
+    return count;
+}
+
+static int countStringLiteralLengthAfterQuote(FILE *src, int *row, int *col) {
+    int ch;
+    int count = 0;
+    int prev = 0;
+
+    while ((ch = fgetc(src)) != EOF) {
+        if (ch == '\n') {
+            (*row)++;
+            *col = 1;
+        } else {
+            (*col)++;
+        }
+
+        if (ch == '"' && prev != '\\') break;
+
+        if (prev == '\\') {
+            count++;
+            prev = 0;
+            continue;
+        }
+
+        if (ch == '\\') {
+            prev = ch;
+            continue;
+        }
+
+        count++;
+        prev = ch;
+    }
+
+    return count;
+}
+
+static void skipCharLiteralAfterQuote(FILE *src, int *row, int *col) {
+    int ch;
+    int prev = 0;
+
+    while ((ch = fgetc(src)) != EOF) {
+        if (ch == '\n') {
+            (*row)++;
+            *col = 1;
+        } else {
+            (*col)++;
+        }
+
+        if (ch == '\'' && prev != '\\') break;
+
+        if (prev == '\\') {
+            prev = 0;
+            continue;
+        }
+
+        if (ch == '\\') {
+            prev = ch;
+            continue;
+        }
+
+        prev = ch;
+    }
 }

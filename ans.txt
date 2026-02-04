@@ -1,20 +1,347 @@
-       Name       Type       Size   Return Type  Ptr to Local Table
-1      func1      Func       1      char         0x2f8dee50        
-2      main       Func       4      int          0x2f8df720        
-3      ahbs       id         4      -            -                 
-
-func1's Local Table:
-       Name       Type       Size   Return Type 
-1      func1      Func       1      char        
-2      s          char       1      -           
-3      ch         int        4      -           
-4      c          int        4      -           
-5      x          int        4      -           
-main's Local Table:
-       Name       Type       Size   Return Type 
-1      printf     id         -      -           
-2      b          char       1      -           
-3      main       Func       4      int         
-4      a          int        4      -           
-5      v          int        4      -           
-6      k          int        4      -           
+PT_PROGRAM
+  PT_EXTERNAL_DECL_LIST
+    PT_EXTERNAL_DECL
+      PT_FUNCTION_OR_GLOBAL
+        PT_TYPE [tokenName=keyword tokenValue=int]
+        PT_IDENTIFIER [tokenName=id tokenValue=ahbs]
+        PT_FUNCTION_OR_GLOBAL_REST
+          PT_GLOBAL_DECL_REST
+            PT_INIT_DECLARATOR_LIST_TAIL
+              PT_EPSILON
+            PT_SEMICOLON [tokenName=symbol tokenValue=;]
+    PT_EXTERNAL_DECL_LIST
+      PT_EXTERNAL_DECL
+        PT_FUNCTION_OR_GLOBAL
+          PT_TYPE [tokenName=keyword tokenValue=char]
+          PT_IDENTIFIER [tokenName=id tokenValue=func1]
+          PT_FUNCTION_OR_GLOBAL_REST
+            PT_LPAREN [tokenName=symbol tokenValue=(]
+            PT_PARAM_LIST
+              PT_PARAM
+                PT_TYPE [tokenName=keyword tokenValue=int]
+                PT_IDENTIFIER [tokenName=id tokenValue=ch]
+              PT_PARAM_LIST_TAIL
+                PT_COMMA [tokenName=symbol tokenValue=,]
+                PT_PARAM
+                  PT_TYPE [tokenName=keyword tokenValue=char]
+                  PT_STAR [tokenName=ariOp tokenValue=*]
+                  PT_IDENTIFIER [tokenName=id tokenValue=s]
+                PT_PARAM_LIST_TAIL
+                  PT_EPSILON
+            PT_RPAREN [tokenName=symbol tokenValue=)]
+            PT_FUNCTION_REST
+              PT_COMPOUND_STMT
+                PT_LBRACE [tokenName=symbol tokenValue={]
+                PT_DECLARATION_LIST
+                  PT_DECLARATION
+                    PT_TYPE [tokenName=keyword tokenValue=int]
+                    PT_INIT_DECLARATOR_LIST
+                      PT_INIT_DECLARATOR
+                        PT_IDENTIFIER [tokenName=id tokenValue=c]
+                        PT_ASSIGN [tokenName=assignOp tokenValue==]
+                        PT_EXPRESSION
+                          PT_LOGICAL_OR_EXPR
+                            PT_LOGICAL_AND_EXPR
+                              PT_EQUALITY_EXPR
+                                PT_RELATIONAL_EXPR
+                                  PT_ADDITIVE_EXPR
+                                    PT_MULTIPLICATIVE_EXPR
+                                      PT_UNARY_EXPR
+                                        PT_PRIMARY_EXPR
+                                          PT_INTEGER_LITERAL [tokenName=0]
+                                      PT_MULTIPLICATIVE_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_ADDITIVE_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_RELATIONAL_EXPR_TAIL
+                                    PT_EPSILON
+                                PT_EQUALITY_EXPR_TAIL
+                                  PT_EPSILON
+                              PT_LOGICAL_AND_EXPR_TAIL
+                                PT_EPSILON
+                            PT_LOGICAL_OR_EXPR_TAIL
+                              PT_EPSILON
+                      PT_INIT_DECLARATOR_LIST_TAIL
+                        PT_EPSILON
+                    PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                  PT_DECLARATION_LIST
+                    PT_DECLARATION
+                      PT_TYPE [tokenName=keyword tokenValue=int]
+                      PT_INIT_DECLARATOR_LIST
+                        PT_INIT_DECLARATOR
+                          PT_IDENTIFIER [tokenName=id tokenValue=x]
+                          PT_ASSIGN [tokenName=assignOp tokenValue==]
+                          PT_EXPRESSION
+                            PT_LOGICAL_OR_EXPR
+                              PT_LOGICAL_AND_EXPR
+                                PT_EQUALITY_EXPR
+                                  PT_RELATIONAL_EXPR
+                                    PT_ADDITIVE_EXPR
+                                      PT_MULTIPLICATIVE_EXPR
+                                        PT_UNARY_EXPR
+                                          PT_PRIMARY_EXPR
+                                            PT_INTEGER_LITERAL [tokenName=9]
+                                        PT_MULTIPLICATIVE_EXPR_TAIL
+                                          PT_EPSILON
+                                      PT_ADDITIVE_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_RELATIONAL_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_EQUALITY_EXPR_TAIL
+                                    PT_EPSILON
+                                PT_LOGICAL_AND_EXPR_TAIL
+                                  PT_EPSILON
+                              PT_LOGICAL_OR_EXPR_TAIL
+                                PT_EPSILON
+                        PT_INIT_DECLARATOR_LIST_TAIL
+                          PT_EPSILON
+                      PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                    PT_DECLARATION_LIST
+                      PT_EPSILON
+                PT_STATEMENT_LIST
+                  PT_STATEMENT
+                    PT_RETURN_STMT
+                      PT_RETURN [tokenName=keyword tokenValue=return]
+                      PT_RETURN_EXPR_OPT
+                        PT_EXPRESSION
+                          PT_LOGICAL_OR_EXPR
+                            PT_LOGICAL_AND_EXPR
+                              PT_EQUALITY_EXPR
+                                PT_RELATIONAL_EXPR
+                                  PT_ADDITIVE_EXPR
+                                    PT_MULTIPLICATIVE_EXPR
+                                      PT_UNARY_EXPR
+                                        PT_PRIMARY_EXPR
+                                          PT_INTEGER_LITERAL [tokenName=4]
+                                      PT_MULTIPLICATIVE_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_ADDITIVE_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_RELATIONAL_EXPR_TAIL
+                                    PT_EPSILON
+                                PT_EQUALITY_EXPR_TAIL
+                                  PT_EPSILON
+                              PT_LOGICAL_AND_EXPR_TAIL
+                                PT_EPSILON
+                            PT_LOGICAL_OR_EXPR_TAIL
+                              PT_EPSILON
+                      PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                  PT_STATEMENT_LIST
+                    PT_EPSILON
+                PT_RBRACE [tokenName=symbol tokenValue=}]
+      PT_EXTERNAL_DECL_LIST
+        PT_EXTERNAL_DECL
+          PT_FUNCTION_OR_GLOBAL
+            PT_TYPE [tokenName=keyword tokenValue=int]
+            PT_IDENTIFIER [tokenName=id tokenValue=main]
+            PT_FUNCTION_OR_GLOBAL_REST
+              PT_LPAREN [tokenName=symbol tokenValue=(]
+              PT_PARAM_LIST
+                PT_EPSILON
+              PT_RPAREN [tokenName=symbol tokenValue=)]
+              PT_FUNCTION_REST
+                PT_COMPOUND_STMT
+                  PT_LBRACE [tokenName=symbol tokenValue={]
+                  PT_DECLARATION_LIST
+                    PT_EPSILON
+                  PT_STATEMENT_LIST
+                    PT_STATEMENT
+                      PT_IF_STMT
+                        PT_IF [tokenName=keyword tokenValue=if]
+                        PT_LPAREN [tokenName=symbol tokenValue=(]
+                        PT_EXPRESSION
+                          PT_LOGICAL_OR_EXPR
+                            PT_LOGICAL_AND_EXPR
+                              PT_EQUALITY_EXPR
+                                PT_RELATIONAL_EXPR
+                                  PT_ADDITIVE_EXPR
+                                    PT_MULTIPLICATIVE_EXPR
+                                      PT_UNARY_EXPR
+                                        PT_PRIMARY_EXPR
+                                          PT_INTEGER_LITERAL [tokenName=44e-5]
+                                      PT_MULTIPLICATIVE_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_ADDITIVE_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_RELATIONAL_EXPR_TAIL
+                                    PT_EPSILON
+                                PT_EQUALITY_EXPR_TAIL
+                                  PT_EPSILON
+                              PT_LOGICAL_AND_EXPR_TAIL
+                                PT_EPSILON
+                            PT_LOGICAL_OR_EXPR_TAIL
+                              PT_EPSILON
+                        PT_RPAREN [tokenName=symbol tokenValue=)]
+                        PT_STATEMENT
+                          PT_EXPRESSION_STMT
+                            PT_EXPRESSION
+                              PT_LOGICAL_OR_EXPR
+                                PT_LOGICAL_AND_EXPR
+                                  PT_EQUALITY_EXPR
+                                    PT_RELATIONAL_EXPR
+                                      PT_ADDITIVE_EXPR
+                                        PT_MULTIPLICATIVE_EXPR
+                                          PT_UNARY_EXPR
+                                            PT_PRIMARY_EXPR
+                                              PT_IDENTIFIER [tokenName=id tokenValue=printf]
+                                              PT_LPAREN [tokenName=symbol tokenValue=(]
+                                              PT_ARG_LIST
+                                                PT_EXPRESSION
+                                                  PT_LOGICAL_OR_EXPR
+                                                    PT_LOGICAL_AND_EXPR
+                                                      PT_EQUALITY_EXPR
+                                                        PT_RELATIONAL_EXPR
+                                                          PT_ADDITIVE_EXPR
+                                                            PT_MULTIPLICATIVE_EXPR
+                                                              PT_UNARY_EXPR
+                                                                PT_PRIMARY_EXPR
+                                                                  PT_CHAR_LITERAL [tokenName=stringLit]
+                                                              PT_MULTIPLICATIVE_EXPR_TAIL
+                                                                PT_EPSILON
+                                                            PT_ADDITIVE_EXPR_TAIL
+                                                              PT_EPSILON
+                                                          PT_RELATIONAL_EXPR_TAIL
+                                                            PT_EPSILON
+                                                        PT_EQUALITY_EXPR_TAIL
+                                                          PT_EPSILON
+                                                      PT_LOGICAL_AND_EXPR_TAIL
+                                                        PT_EPSILON
+                                                    PT_LOGICAL_OR_EXPR_TAIL
+                                                      PT_EPSILON
+                                                PT_ARG_LIST_TAIL
+                                                  PT_EPSILON
+                                              PT_RPAREN [tokenName=symbol tokenValue=)]
+                                          PT_MULTIPLICATIVE_EXPR_TAIL
+                                            PT_EPSILON
+                                        PT_ADDITIVE_EXPR_TAIL
+                                          PT_EPSILON
+                                      PT_RELATIONAL_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_EQUALITY_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_LOGICAL_AND_EXPR_TAIL
+                                    PT_EPSILON
+                                PT_LOGICAL_OR_EXPR_TAIL
+                                  PT_EPSILON
+                            PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                        PT_IF_ELSE_OPT
+                          PT_EPSILON
+                    PT_STATEMENT_LIST
+                      PT_STATEMENT
+                        PT_DECLARATION
+                          PT_TYPE [tokenName=keyword tokenValue=int]
+                          PT_INIT_DECLARATOR_LIST
+                            PT_INIT_DECLARATOR
+                              PT_IDENTIFIER [tokenName=id tokenValue=a]
+                              PT_ASSIGN [tokenName=assignOp tokenValue==]
+                              PT_EXPRESSION
+                                PT_LOGICAL_OR_EXPR
+                                  PT_LOGICAL_AND_EXPR
+                                    PT_EQUALITY_EXPR
+                                      PT_RELATIONAL_EXPR
+                                        PT_ADDITIVE_EXPR
+                                          PT_MULTIPLICATIVE_EXPR
+                                            PT_UNARY_EXPR
+                                              PT_PRIMARY_EXPR
+                                                PT_INTEGER_LITERAL [tokenName=5]
+                                            PT_MULTIPLICATIVE_EXPR_TAIL
+                                              PT_EPSILON
+                                          PT_ADDITIVE_EXPR_TAIL
+                                            PT_EPSILON
+                                        PT_RELATIONAL_EXPR_TAIL
+                                          PT_EPSILON
+                                      PT_EQUALITY_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_LOGICAL_AND_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_LOGICAL_OR_EXPR_TAIL
+                                    PT_EPSILON
+                            PT_INIT_DECLARATOR_LIST_TAIL
+                              PT_EPSILON
+                          PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                      PT_STATEMENT_LIST
+                        PT_STATEMENT
+                          PT_EXPRESSION_STMT
+                            PT_EXPRESSION
+                              PT_LOGICAL_OR_EXPR
+                                PT_LOGICAL_AND_EXPR
+                                  PT_EQUALITY_EXPR
+                                    PT_RELATIONAL_EXPR
+                                      PT_ADDITIVE_EXPR
+                                        PT_MULTIPLICATIVE_EXPR
+                                          PT_UNARY_EXPR
+                                            PT_PRIMARY_EXPR
+                                              PT_IDENTIFIER [tokenName=id tokenValue=printf]
+                                              PT_LPAREN [tokenName=symbol tokenValue=(]
+                                              PT_ARG_LIST
+                                                PT_EXPRESSION
+                                                  PT_LOGICAL_OR_EXPR
+                                                    PT_LOGICAL_AND_EXPR
+                                                      PT_EQUALITY_EXPR
+                                                        PT_RELATIONAL_EXPR
+                                                          PT_ADDITIVE_EXPR
+                                                            PT_MULTIPLICATIVE_EXPR
+                                                              PT_UNARY_EXPR
+                                                                PT_PRIMARY_EXPR
+                                                                  PT_CHAR_LITERAL [tokenName=stringLit]
+                                                              PT_MULTIPLICATIVE_EXPR_TAIL
+                                                                PT_EPSILON
+                                                            PT_ADDITIVE_EXPR_TAIL
+                                                              PT_EPSILON
+                                                          PT_RELATIONAL_EXPR_TAIL
+                                                            PT_EPSILON
+                                                        PT_EQUALITY_EXPR_TAIL
+                                                          PT_EPSILON
+                                                      PT_LOGICAL_AND_EXPR_TAIL
+                                                        PT_EPSILON
+                                                    PT_LOGICAL_OR_EXPR_TAIL
+                                                      PT_EPSILON
+                                                PT_ARG_LIST_TAIL
+                                                  PT_EPSILON
+                                              PT_RPAREN [tokenName=symbol tokenValue=)]
+                                          PT_MULTIPLICATIVE_EXPR_TAIL
+                                            PT_EPSILON
+                                        PT_ADDITIVE_EXPR_TAIL
+                                          PT_EPSILON
+                                      PT_RELATIONAL_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_EQUALITY_EXPR_TAIL
+                                      PT_EPSILON
+                                  PT_LOGICAL_AND_EXPR_TAIL
+                                    PT_EPSILON
+                                PT_LOGICAL_OR_EXPR_TAIL
+                                  PT_EPSILON
+                            PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                        PT_STATEMENT_LIST
+                          PT_STATEMENT
+                            PT_RETURN_STMT
+                              PT_RETURN [tokenName=keyword tokenValue=return]
+                              PT_RETURN_EXPR_OPT
+                                PT_EXPRESSION
+                                  PT_LOGICAL_OR_EXPR
+                                    PT_LOGICAL_AND_EXPR
+                                      PT_EQUALITY_EXPR
+                                        PT_RELATIONAL_EXPR
+                                          PT_ADDITIVE_EXPR
+                                            PT_MULTIPLICATIVE_EXPR
+                                              PT_UNARY_EXPR
+                                                PT_PRIMARY_EXPR
+                                                  PT_INTEGER_LITERAL [tokenName=0]
+                                              PT_MULTIPLICATIVE_EXPR_TAIL
+                                                PT_EPSILON
+                                            PT_ADDITIVE_EXPR_TAIL
+                                              PT_EPSILON
+                                          PT_RELATIONAL_EXPR_TAIL
+                                            PT_EPSILON
+                                        PT_EQUALITY_EXPR_TAIL
+                                          PT_EPSILON
+                                      PT_LOGICAL_AND_EXPR_TAIL
+                                        PT_EPSILON
+                                    PT_LOGICAL_OR_EXPR_TAIL
+                                      PT_EPSILON
+                              PT_SEMICOLON [tokenName=symbol tokenValue=;]
+                          PT_STATEMENT_LIST
+                            PT_EPSILON
+                  PT_RBRACE [tokenName=symbol tokenValue=}]
+        PT_EXTERNAL_DECL_LIST
+          PT_EPSILON
