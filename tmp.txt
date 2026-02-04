@@ -13,6 +13,9 @@ char func1(int ch, char* s){
 int main(){
                      if(44e-5) printf("Nothing here\n");
                      int a = 5;
+                     int b[13] = {1,2,4};
+                     char c[10] = "bchsbj";
+                     char d[3] = {'s','f','n'};
                                      
                                
                               

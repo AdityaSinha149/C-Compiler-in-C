@@ -13,7 +13,9 @@ char func1(int ch, char* s){
 int main(){
                      if(PI) printf("Nothing here\n");
                      int a = 5;
-                     
+                     int b[13] = {1,2,4};
+                     char c[10] = "bchsbj";
+                     char d[3] = {'s','f','n'};
                      //bcsjhkdvbdsjkh
                      /*vhjskdvk
                      bdsfhgbdf

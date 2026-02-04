@@ -100,6 +100,8 @@ typedef enum {
 
     PT_LPAREN,
     PT_RPAREN,
+    PT_LBRACKET,
+    PT_RBRACKET,
     PT_LBRACE,
     PT_RBRACE,
     PT_COMMA,
@@ -109,6 +111,9 @@ typedef enum {
     PT_ELSE,
     PT_WHILE,
     PT_RETURN,
+
+    PT_INIT_LIST,
+    PT_INIT_LIST_TAIL,
 
     PT_EPSILON,     // ε
     PT_ERROR
@@ -180,6 +185,8 @@ static node* parseDeclaration();
 static node* parseInitDeclaratorList();
 static node* parseInitDeclaratorListTail();
 static node* parseInitDeclarator();
+static node* parseInitList();
+static node* parseInitListTail();
 static node* parseStatementList();
 static node* parseStatement();
 static node* parseExpressionStmt();
@@ -241,6 +248,12 @@ static int isKeywordToken(const char *kw) {
     return isTokenName("keyword") && strcmp(currToken.tokenValue, kw) == 0;
 }
 
+static int isTypeToken() {
+    if (!currToken.tokenName[0]) return 0;
+    if (!(isTokenName("keyword") || isTokenName("id"))) return 0;
+    return isType(currToken.tokenValue);
+}
+
 static int isSymbolToken(char c) {
     return isTokenName("symbol") && currToken.tokenValue[0] == c;
 }
@@ -258,7 +271,8 @@ static int isStringLiteralToken() {
 }
 
 static int isCharLiteralToken() {
-    return currToken.tokenName[0] == '\'';
+    if (currToken.tokenName[0] == '\'') return 1;
+    return isSymbolToken('\'');
 }
 
 static int isAriOpChar(char c) {
@@ -283,7 +297,7 @@ static int isStartOfStatement() {
     if (isKeywordToken("if")) return 1;
     if (isKeywordToken("while")) return 1;
     if (isKeywordToken("return")) return 1;
-    if (isKeywordToken("int") || isKeywordToken("char") || isKeywordToken("void")) return 1;
+    if (isTypeToken()) return 1;
     if (isSymbolToken(';')) return 1;
     if (isStartOfExpression()) return 1;
     return 0;
@@ -472,6 +486,19 @@ static node* parseFunctionRest() {
 //GlobalDeclRest -> InitDeclaratorListTail ';'
 static node* parseGlobalDeclRest() {
     node* n = newNode(PT_GLOBAL_DECL_REST, NULL);
+
+    if (isSymbolToken('[')) {
+        node* lb = expectSymbolNode('[', PT_LBRACKET);
+        node* size = expectIntegerLiteralNode();
+        node* rb = expectSymbolNode(']', PT_RBRACKET);
+        if (!lb || lb->type == PT_ERROR) return lb;
+        if (!size || size->type == PT_ERROR) return size;
+        if (!rb || rb->type == PT_ERROR) return rb;
+        addChild(n, lb);
+        addChild(n, size);
+        addChild(n, rb);
+    }
+
     node* tail = parseInitDeclaratorListTail();
     if (!tail || tail->type == PT_ERROR)
         return tail;
@@ -484,20 +511,20 @@ static node* parseGlobalDeclRest() {
     return n;
 }
 
-//Type → 'int' | 'char' | 'void'
+//Type -> any token recognized by isType() in the lexer
 static node* parseTypes() {
-    if (!isKeywordToken("int") && !isKeywordToken("char") && !isKeywordToken("void"))
+    if (!isTypeToken())
         return returnErrorNode();
     node *type = newNode(PT_TYPE, &currToken);
     advance();
     return type;
 }
 
-//ParamList → Param ParamListTail | ε
+//ParamList -> Param ParamListTail | ε
 static node* parseParamList() {
     node* n = newNode(PT_PARAM_LIST, NULL);
 
-    if (!isKeywordToken("int") && !isKeywordToken("char") && !isKeywordToken("void")) {
+    if (!isTypeToken()) {
         addChild(n, newNode(PT_EPSILON, NULL));
         return n;
     }
@@ -515,7 +542,7 @@ static node* parseParamList() {
     return n;
 }
 
-//ParamListTail → ',' Param ParamListTail | ε
+//ParamListTail -> ',' Param ParamListTail | ε
 static node* parseParamListTail() {
     node* n = newNode(PT_PARAM_LIST_TAIL, NULL);
 
@@ -538,7 +565,7 @@ static node* parseParamListTail() {
     return n;
 }
 
-//Param → Type IDENTIFIER
+//Param -> Type IDENTIFIER
 static node* parseParam() {
     node* n = newNode(PT_PARAM, NULL);
     node* type = parseTypes();
@@ -564,10 +591,23 @@ static node* parseParam() {
 
     addChild(n, type);
     addChild(n, id);
+
+    if (isSymbolToken('[')) {
+        node* lb = expectSymbolNode('[', PT_LBRACKET);
+        node* size = expectIntegerLiteralNode();
+        node* rb = expectSymbolNode(']', PT_RBRACKET);
+        if (!lb || lb->type == PT_ERROR) return lb;
+        if (!size || size->type == PT_ERROR) return size;
+        if (!rb || rb->type == PT_ERROR) return rb;
+        addChild(n, lb);
+        addChild(n, size);
+        addChild(n, rb);
+    }
+
     return n;
 }
 
-//CompoundStmt → '{' DeclarationList StatementList '}'
+//CompoundStmt -> '{' DeclarationList StatementList '}'
 static node* parseCompoundStmt() {
     node* n = newNode(PT_COMPOUND_STMT, NULL);
 
@@ -594,7 +634,7 @@ static node* parseCompoundStmt() {
 static node* parseDeclarationList() {
     node* n = newNode(PT_DECLARATION_LIST, NULL);
 
-    if (!isKeywordToken("int") && !isKeywordToken("char") && !isKeywordToken("void")) {
+    if (!isTypeToken()) {
         addChild(n, newNode(PT_EPSILON, NULL));
         return n;
     }
@@ -634,7 +674,7 @@ static node* parseDeclaration() {
     return n;
 }
 
-//InitDeclaratorList → InitDeclarator InitDeclaratorListTail
+//InitDeclaratorList -> InitDeclarator InitDeclaratorListTail
 static node* parseInitDeclaratorList() {
     node* n = newNode(PT_INIT_DECLARATOR_LIST, NULL);
     node* first = parseInitDeclarator();
@@ -650,7 +690,7 @@ static node* parseInitDeclaratorList() {
     return n;
 }
 
-//InitDeclaratorListTail → ',' InitDeclarator InitDeclaratorListTail | ε
+//InitDeclaratorListTail -> ',' InitDeclarator InitDeclaratorListTail | ε
 static node* parseInitDeclaratorListTail() {
     node* n = newNode(PT_INIT_DECLARATOR_LIST_TAIL, NULL);
 
@@ -673,7 +713,7 @@ static node* parseInitDeclaratorListTail() {
     return n;
 }
 
-//InitDeclarator → IDENTIFIER | IDENTIFIER '=' Expression
+//InitDeclarator -> IDENTIFIER | IDENTIFIER '=' Expression
 static node* parseInitDeclarator() {
     node* n = newNode(PT_INIT_DECLARATOR, NULL);
 
@@ -683,18 +723,89 @@ static node* parseInitDeclarator() {
 
     addChild(n, id);
 
+    if (isSymbolToken('[')) {
+        node* lb = expectSymbolNode('[', PT_LBRACKET);
+        if (!lb || lb->type == PT_ERROR) return lb;
+        addChild(n, lb);
+
+        if (!isSymbolToken(']')) {
+            node* size = expectIntegerLiteralNode();
+            if (!size || size->type == PT_ERROR) return size;
+            addChild(n, size);
+        }
+
+        node* rb = expectSymbolNode(']', PT_RBRACKET);
+        if (!rb || rb->type == PT_ERROR) return rb;
+        addChild(n, rb);
+    }
+
     if (isTokenName("assignOp")) {
         node* assign = expectAssignNode();
         if (!assign || assign->type == PT_ERROR)
             return assign;
-        node* expr = parseExpression();
-        if (!expr || expr->type == PT_ERROR)
-            return expr;
-
         addChild(n, assign);
-        addChild(n, expr);
+
+        if (isSymbolToken('{')) {
+            node* lb = expectSymbolNode('{', PT_LBRACE);
+            if (!lb || lb->type == PT_ERROR) return lb;
+            node* list = parseInitList();
+            if (!list || list->type == PT_ERROR) return list;
+            node* rb = expectSymbolNode('}', PT_RBRACE);
+            if (!rb || rb->type == PT_ERROR) return rb;
+            addChild(n, lb);
+            addChild(n, list);
+            addChild(n, rb);
+        } else {
+            node* expr = parseExpression();
+            if (!expr || expr->type == PT_ERROR)
+                return expr;
+            addChild(n, expr);
+        }
     }
 
+    return n;
+}
+
+// InitList → Expression InitListTail
+static node* parseInitList() {
+    node* n = newNode(PT_INIT_LIST, NULL);
+
+    if (!isStartOfExpression())
+        return returnErrorNode();
+
+    node* expr = parseExpression();
+    if (!expr || expr->type == PT_ERROR)
+        return expr;
+
+    node* tail = parseInitListTail();
+    if (!tail || tail->type == PT_ERROR)
+        return tail;
+
+    addChild(n, expr);
+    addChild(n, tail);
+    return n;
+}
+
+// InitListTail → ',' Expression InitListTail | ε
+static node* parseInitListTail() {
+    node* n = newNode(PT_INIT_LIST_TAIL, NULL);
+
+    if (!isSymbolToken(',')) {
+        addChild(n, newNode(PT_EPSILON, NULL));
+        return n;
+    }
+
+    node* comma = expectSymbolNode(',', PT_COMMA);
+    node* expr = parseExpression();
+    node* tail = parseInitListTail();
+
+    if (!comma || comma->type == PT_ERROR) return comma;
+    if (!expr || expr->type == PT_ERROR) return expr;
+    if (!tail || tail->type == PT_ERROR) return tail;
+
+    addChild(n, comma);
+    addChild(n, expr);
+    addChild(n, tail);
     return n;
 }
 
@@ -720,7 +831,7 @@ static node* parseStatementList() {
     return n;
 }
 
-//Statement → ExpressionStmt | CompoundStmt | IfStmt | WhileStmt | ReturnStmt
+//Statement -> ExpressionStmt | CompoundStmt | IfStmt | WhileStmt | ReturnStmt
 static node* parseStatement() {
     node* n = newNode(PT_STATEMENT, NULL);
 
@@ -749,7 +860,7 @@ static node* parseStatement() {
         return n;
     }
 
-    if (isKeywordToken("int") || isKeywordToken("char") || isKeywordToken("void")) {
+    if (isTypeToken()) {
         node* decl = parseDeclaration();
         if (!decl || decl->type == PT_ERROR) return decl;
         addChild(n, decl);
@@ -762,7 +873,7 @@ static node* parseStatement() {
     return n;
 }
 
-//ExpressionStmt → Expression ';' | ';'
+//ExpressionStmt -> Expression ';' | ';'
 static node* parseExpressionStmt() {
     node* n = newNode(PT_EXPRESSION_STMT, NULL);
 
@@ -786,7 +897,7 @@ static node* parseExpressionStmt() {
     return n;
 }
 
-// IfStmt → 'if' '(' Expression ')' Statement IfElseOpt
+// IfStmt -> 'if' '(' Expression ')' Statement IfElseOpt
 static node* parseIfStmt() {
     node* n = newNode(PT_IF_STMT, NULL);
 
@@ -820,7 +931,7 @@ static node* parseIfStmt() {
     return n;
 }
 
-// IfElseOpt → 'else' Statement | ε
+// IfElseOpt -> 'else' Statement | ε
 static node* parseIfElseOpt() {
     node* n = newNode(PT_IF_ELSE_OPT, NULL);
 
@@ -839,7 +950,7 @@ static node* parseIfElseOpt() {
     return n;
 }
 
-// WhileStmt → 'while' '(' Expression ')' Statement
+// WhileStmt -> 'while' '(' Expression ')' Statement
 static node* parseWhileStmt() {
     node* n = newNode(PT_WHILE_STMT, NULL);
 
@@ -867,7 +978,7 @@ static node* parseWhileStmt() {
     return n;
 }
 
-// ReturnStmt → 'return' ReturnExprOpt ';'
+// ReturnStmt -> 'return' ReturnExprOpt ';'
 static node* parseReturnStmt() {
     node* n = newNode(PT_RETURN_STMT, NULL);
 
@@ -886,7 +997,7 @@ static node* parseReturnStmt() {
     return n;
 }
 
-// ReturnExprOpt → Expression | ε
+// ReturnExprOpt -> Expression | ε
 static node* parseReturnExprOpt() {
     node* n = newNode(PT_RETURN_EXPR_OPT, NULL);
 
@@ -903,7 +1014,7 @@ static node* parseReturnExprOpt() {
     return n;
 }
 
-// Expression → IDENTIFIER '=' Expression | LogicalOrExpr
+// Expression -> IDENTIFIER '=' Expression | LogicalOrExpr
 static node* parseExpression() {
     node* n = newNode(PT_EXPRESSION, NULL);
 
@@ -932,7 +1043,7 @@ static node* parseExpression() {
     return n;
 }
 
-// LogicalOrExpr → LogicalAndExpr LogicalOrExpr'
+// LogicalOrExpr -> LogicalAndExpr LogicalOrExpr'
 static node* parseLogicalOrExpr() {
     node* n = newNode(PT_LOGICAL_OR_EXPR, NULL);
 
@@ -949,7 +1060,7 @@ static node* parseLogicalOrExpr() {
     return n;
 }
 
-// LogicalOrExpr' → '||' LogicalAndExpr LogicalOrExpr' | ε
+// LogicalOrExpr' -> '||' LogicalAndExpr LogicalOrExpr' | ε
 static node* parseLogicalOrExprTail() {
     node* n = newNode(PT_LOGICAL_OR_EXPR_TAIL, NULL);
 
@@ -976,7 +1087,7 @@ static node* parseLogicalOrExprTail() {
     return n;
 }
 
-// LogicalAndExpr → EqualityExpr LogicalAndExpr'
+// LogicalAndExpr -> EqualityExpr LogicalAndExpr'
 static node* parseLogicalAndExpr() {
     node* n = newNode(PT_LOGICAL_AND_EXPR, NULL);
 
@@ -993,7 +1104,7 @@ static node* parseLogicalAndExpr() {
     return n;
 }
 
-// LogicalAndExpr' → '&&' EqualityExpr LogicalAndExpr' | ε
+// LogicalAndExpr' -> '&&' EqualityExpr LogicalAndExpr' | ε
 static node* parseLogicalAndExprTail() {
     node* n = newNode(PT_LOGICAL_AND_EXPR_TAIL, NULL);
 
@@ -1020,7 +1131,7 @@ static node* parseLogicalAndExprTail() {
     return n;
 }
 
-// EqualityExpr → RelationalExpr EqualityExpr'
+// EqualityExpr -> RelationalExpr EqualityExpr'
 static node* parseEqualityExpr() {
     node* n = newNode(PT_EQUALITY_EXPR, NULL);
 
@@ -1037,7 +1148,7 @@ static node* parseEqualityExpr() {
     return n;
 }
 
-// EqualityExpr' → '==' RelationalExpr EqualityExpr' | '!=' RelationalExpr EqualityExpr' | ε
+// EqualityExpr' -> '==' RelationalExpr EqualityExpr' | '!=' RelationalExpr EqualityExpr' | ε
 static node* parseEqualityExprTail() {
     node* n = newNode(PT_EQUALITY_EXPR_TAIL, NULL);
 
@@ -1090,7 +1201,7 @@ static node* parseEqualityExprTail() {
     return n;
 }
 
-// RelationalExpr → AdditiveExpr RelationalExpr'
+// RelationalExpr -> AdditiveExpr RelationalExpr'
 static node* parseRelationalExpr() {
     node* n = newNode(PT_RELATIONAL_EXPR, NULL);
 
@@ -1107,7 +1218,7 @@ static node* parseRelationalExpr() {
     return n;
 }
 
-// RelationalExpr' → '<' AdditiveExpr RelationalExpr' | '>' AdditiveExpr RelationalExpr'
+// RelationalExpr' -> '<' AdditiveExpr RelationalExpr' | '>' AdditiveExpr RelationalExpr'
 //                | '<=' AdditiveExpr RelationalExpr' | '>=' AdditiveExpr RelationalExpr' | ε
 static node* parseRelationalExprTail() {
     node* n = newNode(PT_RELATIONAL_EXPR_TAIL, NULL);
@@ -1148,7 +1259,7 @@ static node* parseRelationalExprTail() {
     return n;
 }
 
-// AdditiveExpr → MultiplicativeExpr AdditiveExpr'
+// AdditiveExpr -> MultiplicativeExpr AdditiveExpr'
 static node* parseAdditiveExpr() {
     node* n = newNode(PT_ADDITIVE_EXPR, NULL);
 
@@ -1165,7 +1276,7 @@ static node* parseAdditiveExpr() {
     return n;
 }
 
-// AdditiveExpr' → '+' MultiplicativeExpr AdditiveExpr' | '-' MultiplicativeExpr AdditiveExpr' | ε
+// AdditiveExpr' -> '+' MultiplicativeExpr AdditiveExpr' | '-' MultiplicativeExpr AdditiveExpr' | ε
 static node* parseAdditiveExprTail() {
     node* n = newNode(PT_ADDITIVE_EXPR_TAIL, NULL);
 
@@ -1200,7 +1311,7 @@ static node* parseAdditiveExprTail() {
     return n;
 }
 
-// MultiplicativeExpr → UnaryExpr MultiplicativeExpr'
+// MultiplicativeExpr -> UnaryExpr MultiplicativeExpr'
 static node* parseMultiplicativeExpr() {
     node* n = newNode(PT_MULTIPLICATIVE_EXPR, NULL);
 
@@ -1217,7 +1328,7 @@ static node* parseMultiplicativeExpr() {
     return n;
 }
 
-// MultiplicativeExpr' → '*' UnaryExpr MultiplicativeExpr' | '/' UnaryExpr MultiplicativeExpr' | '%' UnaryExpr MultiplicativeExpr' | ε
+// MultiplicativeExpr' -> '*' UnaryExpr MultiplicativeExpr' | '/' UnaryExpr MultiplicativeExpr' | '%' UnaryExpr MultiplicativeExpr' | ε
 static node* parseMultiplicativeExprTail() {
     node* n = newNode(PT_MULTIPLICATIVE_EXPR_TAIL, NULL);
 
@@ -1256,7 +1367,7 @@ static node* parseMultiplicativeExprTail() {
     return n;
 }
 
-// UnaryExpr → '-' UnaryExpr | '!' UnaryExpr | PrimaryExpr
+// UnaryExpr -> '-' UnaryExpr | '!' UnaryExpr | PrimaryExpr
 static node* parseUnaryExpr() {
     node* n = newNode(PT_UNARY_EXPR, NULL);
 
@@ -1288,7 +1399,7 @@ static node* parseUnaryExpr() {
     return n;
 }
 
-// PrimaryExpr → IDENTIFIER | IDENTIFIER '(' ArgList ')' | INTEGER_LITERAL | CHAR_LITERAL | '(' Expression ')'
+// PrimaryExpr -> IDENTIFIER | IDENTIFIER '(' ArgList ')' | INTEGER_LITERAL | CHAR_LITERAL | '(' Expression ')'
 static node* parsePrimaryExpr() {
     node* n = newNode(PT_PRIMARY_EXPR, NULL);
 
@@ -1330,10 +1441,26 @@ static node* parsePrimaryExpr() {
     }
 
     if (isCharLiteralToken()) {
-        node* lit = expectCharLiteralNode();
-        if (!lit || lit->type == PT_ERROR) return lit;
-        addChild(n, lit);
-        return n;
+        if (isSymbolToken('\'')) {
+            token mid;
+            node* lit = NULL;
+            advance();
+            if (!isIdentifierToken() && !isIntegerLiteralToken())
+                return returnErrorNode();
+            mid = currToken;
+            advance();
+            if (!isSymbolToken('\''))
+                return returnErrorNode();
+            advance();
+            lit = newNode(PT_CHAR_LITERAL, &mid);
+            addChild(n, lit);
+            return n;
+        } else {
+            node* lit = expectCharLiteralNode();
+            if (!lit || lit->type == PT_ERROR) return lit;
+            addChild(n, lit);
+            return n;
+        }
     }
 
     if (isSymbolToken('(')) {
@@ -1352,7 +1479,7 @@ static node* parsePrimaryExpr() {
     return returnErrorNode();
 }
 
-// ArgList → Expression ArgListTail | ε
+// ArgList -> Expression ArgListTail | ε
 static node* parseArgList() {
     node* n = newNode(PT_ARG_LIST, NULL);
 
@@ -1374,7 +1501,7 @@ static node* parseArgList() {
     return n;
 }
 
-// ArgListTail → ',' Expression ArgListTail | ε
+// ArgListTail -> ',' Expression ArgListTail | ε
 static node* parseArgListTail() {
     node* n = newNode(PT_ARG_LIST_TAIL, NULL);
 
@@ -1461,6 +1588,8 @@ static const char *nodeTypeName(nodeType type) {
         case PT_LOGICAL_NOT: return "PT_LOGICAL_NOT";
         case PT_LPAREN: return "PT_LPAREN";
         case PT_RPAREN: return "PT_RPAREN";
+        case PT_LBRACKET: return "PT_LBRACKET";
+        case PT_RBRACKET: return "PT_RBRACKET";
         case PT_LBRACE: return "PT_LBRACE";
         case PT_RBRACE: return "PT_RBRACE";
         case PT_COMMA: return "PT_COMMA";
@@ -1469,6 +1598,8 @@ static const char *nodeTypeName(nodeType type) {
         case PT_ELSE: return "PT_ELSE";
         case PT_WHILE: return "PT_WHILE";
         case PT_RETURN: return "PT_RETURN";
+        case PT_INIT_LIST: return "PT_INIT_LIST";
+        case PT_INIT_LIST_TAIL: return "PT_INIT_LIST_TAIL";
         case PT_EPSILON: return "PT_EPSILON";
         case PT_ERROR: return "PT_ERROR";
         default: return "PT_UNKNOWN";
