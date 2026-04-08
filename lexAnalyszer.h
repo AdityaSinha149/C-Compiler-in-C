@@ -444,17 +444,43 @@ static token isStringLiteral(int ch, FILE *src, int *row, int *col) {
     curr.col = *col;
     curr.row = *row;
     strcpy(curr.tokenName, "stringLit");
+
+    int i = 0;
     ch = fgetc(src);
     (*col)++;
-    while (ch != '"') {
-        ch = fgetc(src);
-        if (ch == '\n') {
-            *col = 1;
-            (*row)++;
+
+    while (ch != EOF && ch != '"') {
+        if (ch == '\\') {
+            int esc = fgetc(src);
+            if (esc == EOF) break;
+            (*col)++;
+
+            if (esc == 'n') ch = '\n';
+            else if (esc == 't') ch = '\t';
+            else if (esc == 'r') ch = '\r';
+            else if (esc == '0') ch = '\0';
+            else ch = esc;
         }
-        else (*col)++;
+
+        if (i < (int)sizeof(curr.tokenValue) - 1) {
+            curr.tokenValue[i++] = (char)ch;
+        }
+
+        if (ch == '\n') {
+            (*row)++;
+            *col = 1;
+        } else {
+            (*col)++;
+        }
+
+        ch = fgetc(src);
     }
-    (*col)++;
+
+    curr.tokenValue[i] = '\0';
+
+    if (ch == '"') {
+        (*col)++;
+    }
     return curr;
 }
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "parsing.h"
+#include "semanticAnalyzer.h"
 #include "preprocessing.h"
 
 int main() {
@@ -31,8 +32,13 @@ int main() {
     node *root = parseProgram();
     printParseTree(root, out, 0);
 
+    int semErrors = doSemanticChecks(root, stderr);
+    if (semErrors > 0) {
+        fprintf(stderr, "Semantic analysis failed with %d error(s).\n", semErrors);
+    }
+
     fclose(out);
     fclose(tmp);
     fclose(srcFile);
-    return 0;
+    return semErrors > 0 ? 1 : 0;
 }

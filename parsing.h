@@ -83,6 +83,7 @@ typedef enum {
     PT_PLUS,
     PT_MINUS,
     PT_STAR,
+    PT_AMPERSAND,
     PT_SLASH,
     PT_PERCENT,
 
@@ -289,6 +290,7 @@ static int isStartOfExpression() {
     if (isSymbolToken('(')) return 1;
     if (isTokenName("ariOp")) return 1; // unary '-'
     if (isTokenName("logOp")) return 1; // unary '!'
+    if (isTokenName("bitOp") && currToken.tokenValue[0] == '&') return 1; // unary '&'
     return 0;
 }
 
@@ -368,6 +370,15 @@ static node* expectAriOpNode(char op, nodeType type) {
 static node* expectLogOpNode(const char *lexeme, nodeType type) {
     if (!isTokenName("logOp")) return returnErrorNode();
     if (currToken.tokenValue[0] && strcmp(currToken.tokenValue, lexeme) != 0)
+        return returnErrorNode();
+    node* n = newNode(type, &currToken);
+    advance();
+    return n;
+}
+
+static node* expectBitOpNode(char op, nodeType type) {
+    if (!isTokenName("bitOp")) return returnErrorNode();
+    if (currToken.tokenValue[0] && currToken.tokenValue[0] != op)
         return returnErrorNode();
     node* n = newNode(type, &currToken);
     advance();
@@ -1367,7 +1378,7 @@ static node* parseMultiplicativeExprTail() {
     return n;
 }
 
-// UnaryExpr -> '-' UnaryExpr | '!' UnaryExpr | PrimaryExpr
+// UnaryExpr -> '-' UnaryExpr | '!' UnaryExpr | '&' UnaryExpr | PrimaryExpr
 static node* parseUnaryExpr() {
     node* n = newNode(PT_UNARY_EXPR, NULL);
 
@@ -1383,6 +1394,16 @@ static node* parseUnaryExpr() {
 
     if (isTokenName("logOp")) {
         node* op = expectLogOpNode("!", PT_LOGICAL_NOT);
+        if (!op || op->type == PT_ERROR) return op;
+        node* unary = parseUnaryExpr();
+        if (!unary || unary->type == PT_ERROR) return unary;
+        addChild(n, op);
+        addChild(n, unary);
+        return n;
+    }
+
+    if (isTokenName("bitOp") && currToken.tokenValue[0] == '&') {
+        node* op = expectBitOpNode('&', PT_AMPERSAND);
         if (!op || op->type == PT_ERROR) return op;
         node* unary = parseUnaryExpr();
         if (!unary || unary->type == PT_ERROR) return unary;
@@ -1574,6 +1595,7 @@ static const char *nodeTypeName(nodeType type) {
         case PT_PLUS: return "PT_PLUS";
         case PT_MINUS: return "PT_MINUS";
         case PT_STAR: return "PT_STAR";
+        case PT_AMPERSAND: return "PT_AMPERSAND";
         case PT_SLASH: return "PT_SLASH";
         case PT_PERCENT: return "PT_PERCENT";
         case PT_ASSIGN: return "PT_ASSIGN";
